@@ -1,323 +1,568 @@
-import { useState, useEffect, useRef } from 'react';
-
-export default function JumpGame() {
-  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver
-  const [player, setPlayer] = useState({
-    x: 100,
-    y: 200,
-    velocityY: 0,
-    isJumping: false
-  });
-  const [obstacles, setObstacles] = useState([]);
-  const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const gameLoopRef = useRef();
-  const keysRef = useRef({ space: false, up: false });
-
-  const GRAVITY = 0.8;
-  const JUMP_FORCE = -15;
-  const GROUND_Y = 200;
-  const GAME_SPEED = 3;
-
-  // Handle keyboard input
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
-        e.preventDefault();
-        if (gameState === 'playing') {
-          keysRef.current[e.code === 'Space' ? 'space' : 'up'] = true;
-          jump();
-        } else if (gameState === 'menu' || gameState === 'gameOver') {
-          startGame();
-        }
-      }
-    };
-
-    const handleKeyUp = (e) => {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
-        keysRef.current[e.code === 'Space' ? 'space' : 'up'] = false;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [gameState]);
-
-  const jump = () => {
-    setPlayer(prev => {
-      if (prev.y >= GROUND_Y - 5) { // Only jump if on ground
-        return {
-          ...prev,
-          velocityY: JUMP_FORCE,
-          isJumping: true
-        };
-      }
-      return prev;
-    });
-  };
-
-  const startGame = () => {
-    setGameState('playing');
-    setPlayer({
-      x: 100,
-      y: GROUND_Y,
-      velocityY: 0,
-      isJumping: false
-    });
-    setObstacles([]);
-    setScore(0);
-  };
-
-  const endGame = () => {
-    setGameState('gameOver');
-    if (score > highScore) {
-      setHighScore(score);
-    }
-    if (gameLoopRef.current) {
-      cancelAnimationFrame(gameLoopRef.current);
-    }
-  };
-
-  // Game loop
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    const gameLoop = () => {
-      // Update player physics
-      setPlayer(prev => {
-        let newY = prev.y + prev.velocityY;
-        let newVelocityY = prev.velocityY + GRAVITY;
-        let newIsJumping = prev.isJumping;
-
-        // Ground collision
-        if (newY >= GROUND_Y) {
-          newY = GROUND_Y;
-          newVelocityY = 0;
-          newIsJumping = false;
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมกระโดด</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        return {
-          ...prev,
-          y: newY,
-          velocityY: newVelocityY,
-          isJumping: newIsJumping
-        };
-      });
-
-      // Update obstacles
-      setObstacles(prev => {
-        let newObstacles = prev.map(obstacle => ({
-          ...obstacle,
-          x: obstacle.x - GAME_SPEED
-        })).filter(obstacle => obstacle.x > -50);
-
-        // Add new obstacles
-        if (newObstacles.length === 0 || newObstacles[newObstacles.length - 1].x < 600) {
-          const types = ['cactus', 'rock', 'spike'];
-          const type = types[Math.floor(Math.random() * types.length)];
-          newObstacles.push({
-            x: 800,
-            y: GROUND_Y - (type === 'spike' ? 20 : 30),
-            width: type === 'rock' ? 40 : 30,
-            height: type === 'spike' ? 20 : 30,
-            type: type
-          });
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #60A5FA, #93C5FD);
+            overflow: hidden;
+            height: 100vh;
         }
 
-        return newObstacles;
-      });
-
-      // Update score
-      setScore(prev => prev + 1);
-
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
-    };
-
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
-
-    return () => {
-      if (gameLoopRef.current) {
-        cancelAnimationFrame(gameLoopRef.current);
-      }
-    };
-  }, [gameState]);
-
-  // Collision detection
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    const checkCollisions = () => {
-      obstacles.forEach(obstacle => {
-        if (
-          player.x < obstacle.x + obstacle.width &&
-          player.x + 40 > obstacle.x &&
-          player.y < obstacle.y + obstacle.height &&
-          player.y + 40 > obstacle.y
-        ) {
-          endGame();
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
-      });
-    };
 
-    checkCollisions();
-  }, [player, obstacles, gameState]);
+        .cloud {
+            position: absolute;
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+        }
 
-  const getObstacleEmoji = (type) => {
-    switch (type) {
-      case 'cactus': return '🌵';
-      case 'rock': return '🪨';
-      case 'spike': return '⚡';
-      default: return '🌵';
-    }
-  };
+        .cloud1 { top: 40px; left: 80px; animation-delay: 0s; }
+        .cloud2 { top: 64px; right: 128px; font-size: 1.5rem; animation-delay: 1s; }
+        .cloud3 { top: 32px; right: 256px; font-size: 2.5rem; animation-delay: 2s; }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-400 to-blue-200 overflow-hidden relative">
-      {/* Clouds */}
-      <div className="absolute top-10 left-20 text-4xl animate-pulse">☁️</div>
-      <div className="absolute top-16 right-32 text-3xl animate-pulse delay-1000">☁️</div>
-      <div className="absolute top-8 right-64 text-5xl animate-pulse delay-2000">☁️</div>
+        .sun {
+            position: absolute;
+            top: 32px;
+            left: 384px;
+            font-size: 3rem;
+            animation: spin 20s linear infinite;
+        }
 
-      {/* Sun */}
-      <div className="absolute top-8 left-96 text-6xl animate-spin" style={{ animationDuration: '20s' }}>☀️</div>
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: #4ADE80;
+            border-top: 4px solid #16A34A;
+        }
 
-      {/* Game Area */}
-      <div className="relative w-full h-screen">
-        {/* Ground */}
-        <div 
-          className="absolute bottom-0 w-full bg-green-400 border-t-4 border-green-600"
-          style={{ height: `${window.innerHeight - GROUND_Y - 100}px` }}
-        >
-          {/* Grass pattern */}
-          <div className="flex text-2xl animate-pulse">
-            {Array.from({ length: 50 }, (_, i) => (
-              <span key={i} className="text-green-600">🌱</span>
-            ))}
-          </div>
+        .grass {
+            display: flex;
+            animation: pulse 2s infinite;
+            font-size: 1.5rem;
+            color: #16A34A;
+        }
+
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            font-size: 2.5rem;
+            transition: transform 0.1s;
+        }
+
+        .obstacle {
+            position: absolute;
+            font-size: 2.5rem;
+        }
+
+        .menu-overlay, .gameover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+
+        .modal h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #DC2626;
+            margin-bottom: 1rem;
+        }
+
+        .modal p {
+            color: #6B7280;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #10B981, #3B82F6);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.25rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            background: linear-gradient(to right, #059669, #2563EB);
+        }
+
+        .btn-secondary {
+            background: #6B7280;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 32px;
+            right: 32px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .jump-button {
+            position: absolute;
+            bottom: 80px;
+            right: 32px;
+            background: #EAB308;
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            color: white;
+            font-size: 0.875rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .creator {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            color: white;
+            font-size: 0.875rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .jump-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .score-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .highscore-text {
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Background Elements -->
+        <div class="cloud cloud1">☁️</div>
+        <div class="cloud cloud2">☁️</div>
+        <div class="cloud cloud3">☁️</div>
+        <div class="sun">☀️</div>
+
+        <!-- Ground -->
+        <div class="ground">
+            <div class="grass">
+                🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+            </div>
         </div>
 
-        {/* Player */}
-        {gameState === 'playing' && (
-          <div
-            className={`absolute w-10 h-10 text-4xl transition-transform ${
-              player.isJumping ? 'scale-110' : 'scale-100'
-            }`}
-            style={{
-              left: player.x,
-              top: player.y,
-              transform: `rotate(${player.velocityY * 2}deg)`
-            }}
-          >
-            🏃‍♂️
-          </div>
-        )}
+        <!-- Player -->
+        <div id="player" class="player">🏃‍♂️</div>
 
-        {/* Obstacles */}
-        {gameState === 'playing' && obstacles.map((obstacle, index) => (
-          <div
-            key={index}
-            className="absolute text-4xl"
-            style={{
-              left: obstacle.x,
-              top: obstacle.y,
-              width: obstacle.width,
-              height: obstacle.height
-            }}
-          >
-            {getObstacleEmoji(obstacle.type)}
-          </div>
-        ))}
+        <!-- Score Display -->
+        <div id="scoreDisplay" class="score-display hidden">
+            <div class="score-text">คะแนน: <span id="scoreValue">0</span></div>
+            <div class="highscore-text">สูงสุด: <span id="highScoreValue">0</span></div>
+        </div>
 
-        {/* Score */}
-        {gameState === 'playing' && (
-          <div className="absolute top-8 right-8 bg-white bg-opacity-90 rounded-lg p-4 shadow-lg">
-            <div className="text-2xl font-bold text-gray-800">คะแนน: {Math.floor(score / 10)}</div>
-            <div className="text-sm text-gray-600">สูงสุด: {Math.floor(highScore / 10)}</div>
-          </div>
-        )}
+        <!-- Jump Button (Mobile) -->
+        <button id="jumpButton" class="jump-button">⬆️</button>
 
-        {/* Menu Screen */}
-        {gameState === 'menu' && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-md">
-              <h1 className="text-4xl font-bold text-gray-800 mb-4">🏃‍♂️ เกมกระโดด 🏃‍♂️</h1>
-              <div className="text-gray-600 mb-6">
-                <p className="mb-2">กดปุ่ม <span className="bg-gray-200 px-2 py-1 rounded">Space</span> หรือ <span className="bg-gray-200 px-2 py-1 rounded">↑</span> เพื่อกระโดด</p>
-                <p className="mb-2">หลบสิ่งกีดขวางให้ได้มากที่สุด!</p>
-                <p className="text-sm">💡 กดค้างไว้เพื่อกระโดดต่อเนื่อง</p>
-              </div>
-              <button
-                onClick={startGame}
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-8 py-4 rounded-full font-bold text-xl hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
-              >
-                เริ่มเกม!
-              </button>
-              {highScore > 0 && (
-                <p className="mt-4 text-gray-600">คะแนนสูงสุด: {Math.floor(highScore / 10)}</p>
-              )}
+        <!-- Menu Screen -->
+        <div id="menuScreen" class="menu-overlay">
+            <div class="modal">
+                <h1>🏃‍♂️ เกมกระโดด 🏃‍♂️</h1>
+                <p>กดปุ่ม <strong>Space</strong> หรือ <strong>↑</strong> เพื่อกระโดด</p>
+                <p>หลบสิ่งกีดขวางให้ได้มากที่สุด!</p>
+                <p style="font-size: 0.875rem;">💡 กดค้างไว้เพื่อกระโดดต่อเนื่อง</p>
+                <button id="startButton" class="btn-primary">เริ่มเกม!</button>
+                <p id="menuHighScore" class="hidden" style="margin-top: 1rem;">คะแนนสูงสุด: <span id="menuHighScoreValue">0</span></p>
             </div>
-          </div>
-        )}
+        </div>
 
-        {/* Game Over Screen */}
-        {gameState === 'gameOver' && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-md">
-              <h2 className="text-4xl font-bold text-red-600 mb-4">💥 เกมจบแล้ว! 💥</h2>
-              <div className="text-gray-700 mb-6">
-                <p className="text-2xl font-bold mb-2">คะแนน: {Math.floor(score / 10)}</p>
-                {score > highScore && (
-                  <p className="text-green-600 font-bold mb-2">🎉 สถิติใหม่! 🎉</p>
-                )}
-                <p className="text-gray-600">คะแนนสูงสุด: {Math.floor(highScore / 10)}</p>
-              </div>
-              <div className="space-y-4">
-                <button
-                  onClick={startGame}
-                  className="block w-full bg-gradient-to-r from-green-500 to-blue-500 text-white px-8 py-4 rounded-full font-bold text-xl hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg"
-                >
-                  เล่นอีกครั้ง
-                </button>
-                <button
-                  onClick={() => setGameState('menu')}
-                  className="block w-full bg-gray-500 text-white px-8 py-3 rounded-full font-bold hover:bg-gray-600 transition-all"
-                >
-                  กลับเมนู
-                </button>
-              </div>
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="gameover-overlay hidden">
+            <div class="modal">
+                <h2>💥 เกมจบแล้ว! 💥</h2>
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">คะแนน: <span id="finalScore">0</span></p>
+                    <p id="newRecord" class="hidden" style="color: #10B981; font-weight: bold; margin-bottom: 0.5rem;">🎉 สถิติใหม่! 🎉</p>
+                    <p style="color: #6B7280;">คะแนนสูงสุด: <span id="gameOverHighScore">0</span></p>
+                </div>
+                <button id="restartButton" class="btn-primary">เล่นอีกครั้ง</button>
+                <button id="menuButton" class="btn-secondary">กลับเมนู</button>
             </div>
-          </div>
-        )}
+        </div>
 
-        {/* Mobile Touch Button */}
-        {gameState === 'playing' && (
-          <button
-            onTouchStart={(e) => {
-              e.preventDefault();
-              jump();
-            }}
-            className="absolute bottom-20 right-8 bg-yellow-500 hover:bg-yellow-600 text-white w-16 h-16 rounded-full font-bold text-2xl shadow-lg md:hidden flex items-center justify-center"
-          >
-            ⬆️
-          </button>
-        )}
-      </div>
+        <!-- Instructions -->
+        <div class="instructions">
+            <p>🖥️ คีย์บอร์ด: Space หรือ ↑</p>
+            <p>📱 มือถือ: แตะปุ่มเหลือง</p>
+        </div>
 
-      {/* Instructions */}
-      <div className="absolute bottom-4 left-4 text-white text-sm bg-black bg-opacity-50 rounded p-2">
-        <p>🖥️ คีย์บอร์ด: Space หรือ ↑</p>
-        <p>📱 มือถือ: แตะปุ่มเหลือง</p>
-      </div>
-
-      {/* Creator Credit */}
-      <div className="absolute bottom-4 right-4 text-white text-sm bg-black bg-opacity-50 rounded p-2">
-        <p>👨‍💻 สร้างโดย: Phatnaree Kosa No.10</p>
-      </div>
+        <!-- Creator Credit -->
+        <div class="creator">
+            <p>👨‍💻 สร้างโดย: Phatnaree Kosa No.10</p>
+        </div>
     </div>
-  );
-}
+
+    <script>
+        class JumpGame {
+            constructor() {
+                this.gameState = 'menu'; // menu, playing, gameOver
+                this.player = {
+                    x: 100,
+                    y: 300,
+                    velocityY: 0,
+                    isJumping: false,
+                    element: document.getElementById('player')
+                };
+                this.obstacles = [];
+                this.score = 0;
+                this.highScore = parseInt(localStorage.getItem('jumpGameHighScore') || '0');
+                this.gameSpeed = 3;
+                this.obstacleSpawnTimer = 0;
+                
+                this.GRAVITY = 0.8;
+                this.JUMP_FORCE = -15;
+                this.GROUND_Y = window.innerHeight - 240;
+                
+                this.keys = { space: false, up: false };
+                this.gameLoop = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.updateHighScoreDisplay();
+            }
+            
+            initializeElements() {
+                this.elements = {
+                    menuScreen: document.getElementById('menuScreen'),
+                    gameOverScreen: document.getElementById('gameOverScreen'),
+                    scoreDisplay: document.getElementById('scoreDisplay'),
+                    scoreValue: document.getElementById('scoreValue'),
+                    highScoreValue: document.getElementById('highScoreValue'),
+                    finalScore: document.getElementById('finalScore'),
+                    gameOverHighScore: document.getElementById('gameOverHighScore'),
+                    newRecord: document.getElementById('newRecord'),
+                    menuHighScore: document.getElementById('menuHighScore'),
+                    menuHighScoreValue: document.getElementById('menuHighScoreValue')
+                };
+            }
+            
+            bindEvents() {
+                // Keyboard events
+                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+                
+                // Button events
+                document.getElementById('startButton').addEventListener('click', () => this.startGame());
+                document.getElementById('restartButton').addEventListener('click', () => this.startGame());
+                document.getElementById('menuButton').addEventListener('click', () => this.showMenu());
+                document.getElementById('jumpButton').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.jump();
+                });
+                document.getElementById('jumpButton').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.jump();
+                });
+            }
+            
+            handleKeyDown(e) {
+                if (e.code === 'Space' || e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    if (this.gameState === 'playing') {
+                        this.keys[e.code === 'Space' ? 'space' : 'up'] = true;
+                        this.jump();
+                    } else if (this.gameState === 'menu' || this.gameState === 'gameOver') {
+                        this.startGame();
+                    }
+                }
+            }
+            
+            handleKeyUp(e) {
+                if (e.code === 'Space' || e.code === 'ArrowUp') {
+                    this.keys[e.code === 'Space' ? 'space' : 'up'] = false;
+                }
+            }
+            
+            jump() {
+                if (this.player.y >= this.GROUND_Y - 5) {
+                    this.player.velocityY = this.JUMP_FORCE;
+                    this.player.isJumping = true;
+                }
+            }
+            
+            startGame() {
+                this.gameState = 'playing';
+                this.player.x = 100;
+                this.player.y = this.GROUND_Y;
+                this.player.velocityY = 0;
+                this.player.isJumping = false;
+                this.obstacles = [];
+                this.score = 0;
+                this.obstacleSpawnTimer = 0;
+                
+                this.elements.menuScreen.classList.add('hidden');
+                this.elements.gameOverScreen.classList.add('hidden');
+                this.elements.scoreDisplay.classList.remove('hidden');
+                
+                this.updatePlayerPosition();
+                this.clearObstacles();
+                this.gameLoop = requestAnimationFrame(() => this.update());
+            }
+            
+            showMenu() {
+                this.gameState = 'menu';
+                this.elements.gameOverScreen.classList.add('hidden');
+                this.elements.scoreDisplay.classList.add('hidden');
+                this.elements.menuScreen.classList.remove('hidden');
+                
+                if (this.gameLoop) {
+                    cancelAnimationFrame(this.gameLoop);
+                }
+                this.clearObstacles();
+            }
+            
+            endGame() {
+                this.gameState = 'gameOver';
+                
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('jumpGameHighScore', this.highScore.toString());
+                    this.elements.newRecord.classList.remove('hidden');
+                } else {
+                    this.elements.newRecord.classList.add('hidden');
+                }
+                
+                this.elements.finalScore.textContent = Math.floor(this.score / 10);
+                this.elements.gameOverHighScore.textContent = Math.floor(this.highScore / 10);
+                this.elements.scoreDisplay.classList.add('hidden');
+                this.elements.gameOverScreen.classList.remove('hidden');
+                
+                if (this.gameLoop) {
+                    cancelAnimationFrame(this.gameLoop);
+                }
+            }
+            
+            update() {
+                if (this.gameState !== 'playing') return;
+                
+                this.updatePlayer();
+                this.updateObstacles();
+                this.checkCollisions();
+                this.updateScore();
+                this.updateDisplay();
+                
+                this.gameLoop = requestAnimationFrame(() => this.update());
+            }
+            
+            updatePlayer() {
+                // Apply gravity
+                this.player.velocityY += this.GRAVITY;
+                this.player.y += this.player.velocityY;
+                
+                // Ground collision
+                if (this.player.y >= this.GROUND_Y) {
+                    this.player.y = this.GROUND_Y;
+                    this.player.velocityY = 0;
+                    this.player.isJumping = false;
+                }
+                
+                this.updatePlayerPosition();
+            }
+            
+            updatePlayerPosition() {
+                this.player.element.style.left = this.player.x + 'px';
+                this.player.element.style.top = this.player.y + 'px';
+                this.player.element.style.transform = `rotate(${this.player.velocityY * 2}deg) scale(${this.player.isJumping ? 1.1 : 1})`;
+            }
+            
+            updateObstacles() {
+                // Move existing obstacles
+                this.obstacles.forEach(obstacle => {
+                    obstacle.x -= this.gameSpeed;
+                });
+                
+                // Remove off-screen obstacles
+                this.obstacles = this.obstacles.filter(obstacle => {
+                    if (obstacle.x < -50) {
+                        obstacle.element.remove();
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // Spawn new obstacles
+                this.obstacleSpawnTimer++;
+                if (this.obstacleSpawnTimer > 120 || this.obstacles.length === 0) {
+                    this.spawnObstacle();
+                    this.obstacleSpawnTimer = 0;
+                }
+                
+                // Update obstacle positions
+                this.obstacles.forEach(obstacle => {
+                    obstacle.element.style.left = obstacle.x + 'px';
+                });
+            }
+            
+            spawnObstacle() {
+                const types = [
+                    { emoji: '🌵', width: 30, height: 30 },
+                    { emoji: '🪨', width: 40, height: 30 },
+                    { emoji: '⚡', width: 30, height: 20 }
+                ];
+                
+                const type = types[Math.floor(Math.random() * types.length)];
+                const obstacle = {
+                    x: window.innerWidth,
+                    y: this.GROUND_Y - type.height,
+                    width: type.width,
+                    height: type.height,
+                    element: document.createElement('div')
+                };
+                
+                obstacle.element.className = 'obstacle';
+                obstacle.element.textContent = type.emoji;
+                obstacle.element.style.left = obstacle.x + 'px';
+                obstacle.element.style.top = obstacle.y + 'px';
+                
+                document.querySelector('.game-container').appendChild(obstacle.element);
+                this.obstacles.push(obstacle);
+            }
+            
+            checkCollisions() {
+                this.obstacles.forEach(obstacle => {
+                    if (
+                        this.player.x < obstacle.x + obstacle.width &&
+                        this.player.x + 40 > obstacle.x &&
+                        this.player.y < obstacle.y + obstacle.height &&
+                        this.player.y + 40 > obstacle.y
+                    ) {
+                        this.endGame();
+                    }
+                });
+            }
+            
+            updateScore() {
+                this.score += 1;
+                this.gameSpeed = 3 + Math.floor(this.score / 500) * 0.5; // Increase speed over time
+            }
+            
+            updateDisplay() {
+                this.elements.scoreValue.textContent = Math.floor(this.score / 10);
+                this.elements.highScoreValue.textContent = Math.floor(this.highScore / 10);
+            }
+            
+            updateHighScoreDisplay() {
+                if (this.highScore > 0) {
+                    this.elements.menuHighScore.classList.remove('hidden');
+                    this.elements.menuHighScoreValue.textContent = Math.floor(this.highScore / 10);
+                }
+            }
+            
+            clearObstacles() {
+                this.obstacles.forEach(obstacle => {
+                    obstacle.element.remove();
+                });
+                this.obstacles = [];
+            }
+        }
+        
+        // Initialize game when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new JumpGame();
+        });
+    </script>
+</body>
+</html>
