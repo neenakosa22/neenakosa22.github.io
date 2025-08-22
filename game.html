@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมกระโดด</title>
+    <title>🏃‍♂️ เกมกระโดด - Jump Adventure</title>
     <style>
         * {
             margin: 0;
@@ -12,205 +12,319 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(to bottom, #60A5FA, #93C5FD);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             overflow: hidden;
             height: 100vh;
+            user-select: none;
         }
 
-        .game-container {
+        .game-world {
             position: relative;
             width: 100vw;
             height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Background Elements */
+        .sky {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #B0E0E6 100%);
         }
 
         .cloud {
             position: absolute;
-            font-size: 2rem;
-            animation: pulse 2s infinite;
+            color: white;
+            font-size: 3rem;
+            opacity: 0.8;
+            animation: float 3s ease-in-out infinite;
         }
 
-        .cloud1 { top: 40px; left: 80px; animation-delay: 0s; }
-        .cloud2 { top: 64px; right: 128px; font-size: 1.5rem; animation-delay: 1s; }
-        .cloud3 { top: 32px; right: 256px; font-size: 2.5rem; animation-delay: 2s; }
+        .cloud:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .cloud:nth-child(2) { top: 15%; right: 20%; animation-delay: -1s; }
+        .cloud:nth-child(3) { top: 20%; left: 60%; animation-delay: -2s; }
 
         .sun {
             position: absolute;
-            top: 32px;
-            left: 384px;
-            font-size: 3rem;
-            animation: spin 20s linear infinite;
+            top: 50px;
+            right: 80px;
+            font-size: 4rem;
+            animation: glow 2s ease-in-out infinite alternate;
         }
 
         .ground {
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 200px;
-            background: #4ADE80;
-            border-top: 4px solid #16A34A;
+            height: 150px;
+            background: linear-gradient(to top, #8B4513 0%, #D2B48C 20%, #90EE90 100%);
+            border-top: 5px solid #228B22;
         }
 
-        .grass {
-            display: flex;
-            animation: pulse 2s infinite;
-            font-size: 1.5rem;
-            color: #16A34A;
+        .grass-pattern {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 30px;
+            background: repeating-linear-gradient(
+                90deg,
+                #32CD32 0px,
+                #32CD32 10px,
+                #228B22 10px,
+                #228B22 20px
+            );
+            opacity: 0.7;
         }
 
+        /* Game Elements */
         .player {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            font-size: 2.5rem;
-            transition: transform 0.1s;
+            width: 50px;
+            height: 50px;
+            font-size: 3rem;
+            z-index: 10;
+            transition: transform 0.1s ease;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .player.jumping {
+            animation: playerJump 0.5s ease;
         }
 
         .obstacle {
             position: absolute;
-            font-size: 2.5rem;
+            font-size: 3rem;
+            z-index: 5;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
         }
 
-        .menu-overlay, .gameover-overlay {
+        .coin {
+            position: absolute;
+            font-size: 2rem;
+            z-index: 5;
+            animation: coinSpin 1s linear infinite;
+        }
+
+        /* UI Elements */
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .score-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .score-panel h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .lives-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .lives {
+            font-size: 1.5rem;
+        }
+
+        /* Overlays */
+        .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 1000;
         }
 
         .modal {
-            background: white;
-            border-radius: 24px;
-            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 25px;
             text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: white;
+            max-width: 500px;
             width: 90%;
+            border: 3px solid rgba(255,255,255,0.2);
         }
 
         .modal h1 {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #374151;
-            margin-bottom: 1rem;
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         .modal h2 {
             font-size: 2.5rem;
-            font-weight: bold;
-            color: #DC2626;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         .modal p {
-            color: #6B7280;
-            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
         }
 
         .btn-primary {
-            background: linear-gradient(to right, #10B981, #3B82F6);
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
             color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.25rem;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-            width: 100%;
-            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         .btn-primary:hover {
-            transform: scale(1.05);
-            background: linear-gradient(to right, #059669, #2563EB);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.3);
         }
 
         .btn-secondary {
-            background: #6B7280;
+            background: linear-gradient(45deg, #95A5A6, #7F8C8D);
             color: white;
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         .btn-secondary:hover {
-            background: #4B5563;
+            transform: translateY(-2px);
+            background: linear-gradient(45deg, #7F8C8D, #95A5A6);
         }
 
-        .score-display {
+        /* Mobile Controls */
+        .mobile-controls {
             position: absolute;
-            top: 32px;
-            right: 32px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            bottom: 30px;
+            right: 30px;
+            z-index: 50;
         }
 
-        .jump-button {
-            position: absolute;
-            bottom: 80px;
-            right: 32px;
-            background: #EAB308;
-            color: white;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
+        .jump-btn {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
             border: none;
-            font-size: 1.5rem;
+            border-radius: 50%;
+            font-size: 2rem;
+            color: white;
             cursor: pointer;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
             display: none;
         }
 
-        .instructions {
+        .jump-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Info Panel */
+        .info-panel {
             position: absolute;
-            bottom: 16px;
-            left: 16px;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
             color: white;
-            font-size: 0.875rem;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            padding: 0.5rem;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
         }
 
-        .creator {
+        .creator-info {
             position: absolute;
-            bottom: 16px;
-            right: 16px;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
             color: white;
-            font-size: 0.875rem;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            padding: 0.5rem;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes glow {
+            0% { filter: brightness(1) drop-shadow(0 0 5px #FFD700); }
+            100% { filter: brightness(1.2) drop-shadow(0 0 20px #FFD700); }
         }
 
+        @keyframes playerJump {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(-15deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        @keyframes coinSpin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .jump-button {
-                display: flex;
-                align-items: center;
-                justify-content: center;
+            .jump-btn {
+                display: block;
+            }
+
+            .modal {
+                padding: 30px 20px;
+            }
+
+            .modal h1 {
+                font-size: 2.5rem;
+            }
+
+            .btn {
+                min-width: 150px;
+                padding: 12px 25px;
             }
         }
 
@@ -218,348 +332,469 @@
             display: none !important;
         }
 
-        .score-text {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #374151;
-        }
-
-        .highscore-text {
-            font-size: 0.875rem;
-            color: #6B7280;
+        .game-over-animation {
+            animation: shake 0.5s ease-in-out;
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <!-- Background Elements -->
-        <div class="cloud cloud1">☁️</div>
-        <div class="cloud cloud2">☁️</div>
-        <div class="cloud cloud3">☁️</div>
-        <div class="sun">☀️</div>
+    <div class="game-world">
+        <!-- Background -->
+        <div class="sky">
+            <div class="cloud">☁️</div>
+            <div class="cloud">☁️</div>
+            <div class="cloud">☁️</div>
+            <div class="sun">☀️</div>
+        </div>
 
         <!-- Ground -->
         <div class="ground">
-            <div class="grass">
-                🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
-            </div>
+            <div class="grass-pattern"></div>
         </div>
 
         <!-- Player -->
         <div id="player" class="player">🏃‍♂️</div>
 
-        <!-- Score Display -->
-        <div id="scoreDisplay" class="score-display hidden">
-            <div class="score-text">คะแนน: <span id="scoreValue">0</span></div>
-            <div class="highscore-text">สูงสุด: <span id="highScoreValue">0</span></div>
-        </div>
-
-        <!-- Jump Button (Mobile) -->
-        <button id="jumpButton" class="jump-button">⬆️</button>
-
-        <!-- Menu Screen -->
-        <div id="menuScreen" class="menu-overlay">
-            <div class="modal">
-                <h1>🏃‍♂️ เกมกระโดด 🏃‍♂️</h1>
-                <p>กดปุ่ม <strong>Space</strong> หรือ <strong>↑</strong> เพื่อกระโดด</p>
-                <p>หลบสิ่งกีดขวางให้ได้มากที่สุด!</p>
-                <p style="font-size: 0.875rem;">💡 กดค้างไว้เพื่อกระโดดต่อเนื่อง</p>
-                <button id="startButton" class="btn-primary">เริ่มเกม!</button>
-                <p id="menuHighScore" class="hidden" style="margin-top: 1rem;">คะแนนสูงสุด: <span id="menuHighScoreValue">0</span></p>
-            </div>
-        </div>
-
-        <!-- Game Over Screen -->
-        <div id="gameOverScreen" class="gameover-overlay hidden">
-            <div class="modal">
-                <h2>💥 เกมจบแล้ว! 💥</h2>
-                <div style="margin-bottom: 1.5rem;">
-                    <p style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">คะแนน: <span id="finalScore">0</span></p>
-                    <p id="newRecord" class="hidden" style="color: #10B981; font-weight: bold; margin-bottom: 0.5rem;">🎉 สถิติใหม่! 🎉</p>
-                    <p style="color: #6B7280;">คะแนนสูงสุด: <span id="gameOverHighScore">0</span></p>
+        <!-- Game UI -->
+        <div class="game-ui">
+            <div class="score-panel">
+                <h3>🏆 คะแนน</h3>
+                <div class="score-value" id="currentScore">0</div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+                    สูงสุด: <span id="bestScore">0</span>
                 </div>
-                <button id="restartButton" class="btn-primary">เล่นอีกครั้ง</button>
-                <button id="menuButton" class="btn-secondary">กลับเมนู</button>
+            </div>
+            <div class="lives-panel">
+                <div class="lives" id="livesDisplay">❤️❤️❤️</div>
             </div>
         </div>
 
-        <!-- Instructions -->
-        <div class="instructions">
-            <p>🖥️ คีย์บอร์ด: Space หรือ ↑</p>
-            <p>📱 มือถือ: แตะปุ่มเหลือง</p>
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <button class="jump-btn" id="jumpBtn">⬆️</button>
         </div>
 
-        <!-- Creator Credit -->
-        <div class="creator">
-            <p>👨‍💻 สร้างโดย: Phatnaree Kosa No.10</p>
+        <!-- Info Panels -->
+        <div class="info-panel">
+            <div>🎮 Space/↑ = กระโดด</div>
+            <div>📱 แตะปุ่มเหลือง</div>
+        </div>
+
+        <div class="creator-info">
+            <div>👨‍💻 สร้างโดย: Phatnaree Kosa No.10</div>
+        </div>
+
+        <!-- Start Menu -->
+        <div id="startMenu" class="overlay">
+            <div class="modal">
+                <h1>🏃‍♂️ Jump Adventure 🏃‍♂️</h1>
+                <p>🎯 เก็บเหรียญทอง และหลบสิ่งกีดขวาง!</p>
+                <p>💎 เหรียญ = +10 คะแนน</p>
+                <p>💗 คุณมี 3 ชีวิต</p>
+                <p>⚡ ความเร็วเพิ่มขึ้นเรื่อยๆ!</p>
+                <button class="btn btn-primary" id="startBtn">🚀 เริ่มผจญภัย!</button>
+                <div id="bestScoreMenu" class="hidden" style="margin-top: 20px;">
+                    <p>🥇 คะแนนสูงสุด: <span id="menuBestScore">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Menu -->
+        <div id="gameOverMenu" class="overlay hidden">
+            <div class="modal">
+                <h2>🎮 เกมจบแล้ว!</h2>
+                <div style="margin: 20px 0;">
+                    <p style="font-size: 1.8rem; margin-bottom: 10px;">
+                        🏆 คะแนน: <span id="finalScore">0</span>
+                    </p>
+                    <p style="font-size: 1.4rem; margin-bottom: 10px;">
+                        💰 เหรียญ: <span id="coinsCollected">0</span>
+                    </p>
+                    <div id="newRecordMsg" class="hidden">
+                        <p style="color: #FFD700; font-size: 1.2rem;">🎉 สถิติใหม่! 🎉</p>
+                    </div>
+                    <p>🥇 คะแนนสูงสุด: <span id="gameOverBestScore">0</span></p>
+                </div>
+                <button class="btn btn-primary" id="playAgainBtn">🔄 เล่นอีกครั้ง</button>
+                <button class="btn btn-secondary" id="backToMenuBtn">🏠 กลับเมนู</button>
+            </div>
         </div>
     </div>
 
     <script>
         class JumpGame {
             constructor() {
+                // Game state
                 this.gameState = 'menu'; // menu, playing, gameOver
+                this.score = 0;
+                this.coins = 0;
+                this.lives = 3;
+                this.bestScore = parseInt(localStorage.getItem('jumpGameBest') || '0');
+                this.speed = 4;
+                this.frameCount = 0;
+
+                // Player
                 this.player = {
                     x: 100,
-                    y: 300,
+                    y: window.innerHeight - 200,
+                    width: 50,
+                    height: 50,
                     velocityY: 0,
                     isJumping: false,
                     element: document.getElementById('player')
                 };
+
+                // Game objects
                 this.obstacles = [];
-                this.score = 0;
-                this.highScore = parseInt(localStorage.getItem('jumpGameHighScore') || '0');
-                this.gameSpeed = 3;
-                this.obstacleSpawnTimer = 0;
-                
+                this.coinsList = [];
+                this.particles = [];
+
+                // Constants
                 this.GRAVITY = 0.8;
-                this.JUMP_FORCE = -15;
-                this.GROUND_Y = window.innerHeight - 240;
-                
-                this.keys = { space: false, up: false };
-                this.gameLoop = null;
-                
-                this.initializeElements();
+                this.JUMP_POWER = -18;
+                this.GROUND_Y = window.innerHeight - 200;
+                this.SPAWN_DISTANCE = 300;
+
+                // Elements
+                this.initElements();
                 this.bindEvents();
-                this.updateHighScoreDisplay();
+                this.updateUI();
+                this.showBestScore();
             }
-            
-            initializeElements() {
+
+            initElements() {
                 this.elements = {
-                    menuScreen: document.getElementById('menuScreen'),
-                    gameOverScreen: document.getElementById('gameOverScreen'),
-                    scoreDisplay: document.getElementById('scoreDisplay'),
-                    scoreValue: document.getElementById('scoreValue'),
-                    highScoreValue: document.getElementById('highScoreValue'),
+                    startMenu: document.getElementById('startMenu'),
+                    gameOverMenu: document.getElementById('gameOverMenu'),
+                    currentScore: document.getElementById('currentScore'),
+                    bestScore: document.getElementById('bestScore'),
+                    livesDisplay: document.getElementById('livesDisplay'),
                     finalScore: document.getElementById('finalScore'),
-                    gameOverHighScore: document.getElementById('gameOverHighScore'),
-                    newRecord: document.getElementById('newRecord'),
-                    menuHighScore: document.getElementById('menuHighScore'),
-                    menuHighScoreValue: document.getElementById('menuHighScoreValue')
+                    coinsCollected: document.getElementById('coinsCollected'),
+                    gameOverBestScore: document.getElementById('gameOverBestScore'),
+                    newRecordMsg: document.getElementById('newRecordMsg'),
+                    bestScoreMenu: document.getElementById('bestScoreMenu'),
+                    menuBestScore: document.getElementById('menuBestScore')
                 };
             }
-            
+
             bindEvents() {
-                // Keyboard events
-                document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-                document.addEventListener('keyup', (e) => this.handleKeyUp(e));
-                
-                // Button events
-                document.getElementById('startButton').addEventListener('click', () => this.startGame());
-                document.getElementById('restartButton').addEventListener('click', () => this.startGame());
-                document.getElementById('menuButton').addEventListener('click', () => this.showMenu());
-                document.getElementById('jumpButton').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    this.jump();
-                });
-                document.getElementById('jumpButton').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.jump();
-                });
-            }
-            
-            handleKeyDown(e) {
-                if (e.code === 'Space' || e.code === 'ArrowUp') {
-                    e.preventDefault();
-                    if (this.gameState === 'playing') {
-                        this.keys[e.code === 'Space' ? 'space' : 'up'] = true;
-                        this.jump();
-                    } else if (this.gameState === 'menu' || this.gameState === 'gameOver') {
-                        this.startGame();
+                // Keyboard
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' || e.code === 'ArrowUp') {
+                        e.preventDefault();
+                        this.handleJump();
                     }
+                });
+
+                // Buttons
+                document.getElementById('startBtn').onclick = () => this.startGame();
+                document.getElementById('playAgainBtn').onclick = () => this.startGame();
+                document.getElementById('backToMenuBtn').onclick = () => this.showMenu();
+                
+                // Mobile jump button
+                const jumpBtn = document.getElementById('jumpBtn');
+                jumpBtn.ontouchstart = (e) => {
+                    e.preventDefault();
+                    this.handleJump();
+                };
+                jumpBtn.onclick = (e) => {
+                    e.preventDefault();
+                    this.handleJump();
+                };
+            }
+
+            handleJump() {
+                if (this.gameState === 'playing') {
+                    this.jump();
+                } else if (this.gameState === 'menu' || this.gameState === 'gameOver') {
+                    this.startGame();
                 }
             }
-            
-            handleKeyUp(e) {
-                if (e.code === 'Space' || e.code === 'ArrowUp') {
-                    this.keys[e.code === 'Space' ? 'space' : 'up'] = false;
-                }
-            }
-            
+
             jump() {
-                if (this.player.y >= this.GROUND_Y - 5) {
-                    this.player.velocityY = this.JUMP_FORCE;
+                if (Math.abs(this.player.y - this.GROUND_Y) < 10) {
+                    this.player.velocityY = this.JUMP_POWER;
                     this.player.isJumping = true;
+                    this.player.element.classList.add('jumping');
+                    
+                    setTimeout(() => {
+                        this.player.element.classList.remove('jumping');
+                    }, 500);
                 }
             }
-            
+
             startGame() {
                 this.gameState = 'playing';
-                this.player.x = 100;
+                this.score = 0;
+                this.coins = 0;
+                this.lives = 3;
+                this.speed = 4;
+                this.frameCount = 0;
+
+                // Reset player
                 this.player.y = this.GROUND_Y;
                 this.player.velocityY = 0;
                 this.player.isJumping = false;
-                this.obstacles = [];
-                this.score = 0;
-                this.obstacleSpawnTimer = 0;
-                
-                this.elements.menuScreen.classList.add('hidden');
-                this.elements.gameOverScreen.classList.add('hidden');
-                this.elements.scoreDisplay.classList.remove('hidden');
-                
-                this.updatePlayerPosition();
-                this.clearObstacles();
-                this.gameLoop = requestAnimationFrame(() => this.update());
+
+                // Clear objects
+                this.clearGameObjects();
+
+                // Hide menus
+                this.elements.startMenu.classList.add('hidden');
+                this.elements.gameOverMenu.classList.add('hidden');
+
+                // Start game loop
+                this.gameLoop();
             }
-            
+
             showMenu() {
                 this.gameState = 'menu';
-                this.elements.gameOverScreen.classList.add('hidden');
-                this.elements.scoreDisplay.classList.add('hidden');
-                this.elements.menuScreen.classList.remove('hidden');
-                
-                if (this.gameLoop) {
-                    cancelAnimationFrame(this.gameLoop);
-                }
-                this.clearObstacles();
+                this.clearGameObjects();
+                this.elements.gameOverMenu.classList.add('hidden');
+                this.elements.startMenu.classList.remove('hidden');
             }
-            
-            endGame() {
-                this.gameState = 'gameOver';
-                
-                if (this.score > this.highScore) {
-                    this.highScore = this.score;
-                    localStorage.setItem('jumpGameHighScore', this.highScore.toString());
-                    this.elements.newRecord.classList.remove('hidden');
-                } else {
-                    this.elements.newRecord.classList.add('hidden');
-                }
-                
-                this.elements.finalScore.textContent = Math.floor(this.score / 10);
-                this.elements.gameOverHighScore.textContent = Math.floor(this.highScore / 10);
-                this.elements.scoreDisplay.classList.add('hidden');
-                this.elements.gameOverScreen.classList.remove('hidden');
-                
-                if (this.gameLoop) {
-                    cancelAnimationFrame(this.gameLoop);
-                }
-            }
-            
-            update() {
+
+            gameLoop() {
                 if (this.gameState !== 'playing') return;
-                
+
+                this.frameCount++;
                 this.updatePlayer();
                 this.updateObstacles();
+                this.updateCoins();
+                this.spawnObjects();
                 this.checkCollisions();
                 this.updateScore();
-                this.updateDisplay();
-                
-                this.gameLoop = requestAnimationFrame(() => this.update());
+                this.updateUI();
+
+                requestAnimationFrame(() => this.gameLoop());
             }
-            
+
             updatePlayer() {
                 // Apply gravity
                 this.player.velocityY += this.GRAVITY;
                 this.player.y += this.player.velocityY;
-                
+
                 // Ground collision
                 if (this.player.y >= this.GROUND_Y) {
                     this.player.y = this.GROUND_Y;
                     this.player.velocityY = 0;
                     this.player.isJumping = false;
                 }
-                
-                this.updatePlayerPosition();
-            }
-            
-            updatePlayerPosition() {
+
+                // Update position
                 this.player.element.style.left = this.player.x + 'px';
                 this.player.element.style.top = this.player.y + 'px';
-                this.player.element.style.transform = `rotate(${this.player.velocityY * 2}deg) scale(${this.player.isJumping ? 1.1 : 1})`;
             }
-            
+
+            spawnObjects() {
+                // Spawn obstacles
+                if (this.frameCount % Math.max(60 - Math.floor(this.score / 100), 30) === 0) {
+                    this.createObstacle();
+                }
+
+                // Spawn coins
+                if (this.frameCount % 90 === 0) {
+                    this.createCoin();
+                }
+            }
+
+            createObstacle() {
+                const obstacleTypes = [
+                    { emoji: '🌵', width: 40, height: 60 },
+                    { emoji: '🪨', width: 50, height: 40 },
+                    { emoji: '⚡', width: 30, height: 30 },
+                    { emoji: '🦇', width: 40, height: 30 }
+                ];
+
+                const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+                const obstacle = {
+                    x: window.innerWidth,
+                    y: type.emoji === '🦇' ? this.GROUND_Y - 80 - Math.random() * 50 : this.GROUND_Y - type.height,
+                    width: type.width,
+                    height: type.height,
+                    emoji: type.emoji,
+                    element: this.createElement('obstacle', type.emoji)
+                };
+
+                obstacle.element.style.left = obstacle.x + 'px';
+                obstacle.element.style.top = obstacle.y + 'px';
+                this.obstacles.push(obstacle);
+            }
+
+            createCoin() {
+                const coin = {
+                    x: window.innerWidth,
+                    y: this.GROUND_Y - 50 - Math.random() * 100,
+                    width: 30,
+                    height: 30,
+                    element: this.createElement('coin', '🪙')
+                };
+
+                coin.element.style.left = coin.x + 'px';
+                coin.element.style.top = coin.y + 'px';
+                this.coinsList.push(coin);
+            }
+
+            createElement(className, emoji) {
+                const element = document.createElement('div');
+                element.className = className;
+                element.textContent = emoji;
+                document.querySelector('.game-world').appendChild(element);
+                return element;
+            }
+
             updateObstacles() {
-                // Move existing obstacles
-                this.obstacles.forEach(obstacle => {
-                    obstacle.x -= this.gameSpeed;
-                });
-                
-                // Remove off-screen obstacles
                 this.obstacles = this.obstacles.filter(obstacle => {
-                    if (obstacle.x < -50) {
+                    obstacle.x -= this.speed;
+                    obstacle.element.style.left = obstacle.x + 'px';
+
+                    if (obstacle.x < -100) {
                         obstacle.element.remove();
                         return false;
                     }
                     return true;
                 });
-                
-                // Spawn new obstacles
-                this.obstacleSpawnTimer++;
-                if (this.obstacleSpawnTimer > 120 || this.obstacles.length === 0) {
-                    this.spawnObstacle();
-                    this.obstacleSpawnTimer = 0;
-                }
-                
-                // Update obstacle positions
-                this.obstacles.forEach(obstacle => {
-                    obstacle.element.style.left = obstacle.x + 'px';
+            }
+
+            updateCoins() {
+                this.coinsList = this.coinsList.filter(coin => {
+                    coin.x -= this.speed;
+                    coin.element.style.left = coin.x + 'px';
+
+                    if (coin.x < -50) {
+                        coin.element.remove();
+                        return false;
+                    }
+                    return true;
                 });
             }
-            
-            spawnObstacle() {
-                const types = [
-                    { emoji: '🌵', width: 30, height: 30 },
-                    { emoji: '🪨', width: 40, height: 30 },
-                    { emoji: '⚡', width: 30, height: 20 }
-                ];
-                
-                const type = types[Math.floor(Math.random() * types.length)];
-                const obstacle = {
-                    x: window.innerWidth,
-                    y: this.GROUND_Y - type.height,
-                    width: type.width,
-                    height: type.height,
-                    element: document.createElement('div')
-                };
-                
-                obstacle.element.className = 'obstacle';
-                obstacle.element.textContent = type.emoji;
-                obstacle.element.style.left = obstacle.x + 'px';
-                obstacle.element.style.top = obstacle.y + 'px';
-                
-                document.querySelector('.game-container').appendChild(obstacle.element);
-                this.obstacles.push(obstacle);
-            }
-            
+
             checkCollisions() {
-                this.obstacles.forEach(obstacle => {
-                    if (
-                        this.player.x < obstacle.x + obstacle.width &&
-                        this.player.x + 40 > obstacle.x &&
-                        this.player.y < obstacle.y + obstacle.height &&
-                        this.player.y + 40 > obstacle.y
-                    ) {
-                        this.endGame();
+                // Check obstacle collisions
+                this.obstacles.forEach((obstacle, index) => {
+                    if (this.isColliding(this.player, obstacle)) {
+                        this.takeDamage();
+                        this.obstacles.splice(index, 1);
+                        obstacle.element.remove();
+                    }
+                });
+
+                // Check coin collisions
+                this.coinsList.forEach((coin, index) => {
+                    if (this.isColliding(this.player, coin)) {
+                        this.collectCoin();
+                        this.coinsList.splice(index, 1);
+                        coin.element.remove();
                     }
                 });
             }
-            
-            updateScore() {
-                this.score += 1;
-                this.gameSpeed = 3 + Math.floor(this.score / 500) * 0.5; // Increase speed over time
+
+            isColliding(obj1, obj2) {
+                return obj1.x < obj2.x + obj2.width &&
+                       obj1.x + obj1.width > obj2.x &&
+                       obj1.y < obj2.y + obj2.height &&
+                       obj1.y + obj1.height > obj2.y;
             }
-            
-            updateDisplay() {
-                this.elements.scoreValue.textContent = Math.floor(this.score / 10);
-                this.elements.highScoreValue.textContent = Math.floor(this.highScore / 10);
+
+            collectCoin() {
+                this.coins++;
+                this.score += 10;
+                this.createParticleEffect('🌟', '#FFD700');
             }
-            
-            updateHighScoreDisplay() {
-                if (this.highScore > 0) {
-                    this.elements.menuHighScore.classList.remove('hidden');
-                    this.elements.menuHighScoreValue.textContent = Math.floor(this.highScore / 10);
+
+            takeDamage() {
+                this.lives--;
+                this.createParticleEffect('💥', '#FF4444');
+                
+                if (this.lives <= 0) {
+                    this.gameOver();
+                } else {
+                    // Shake effect
+                    document.querySelector('.game-world').classList.add('game-over-animation');
+                    setTimeout(() => {
+                        document.querySelector('.game-world').classList.remove('game-over-animation');
+                    }, 500);
                 }
             }
-            
-            clearObstacles() {
-                this.obstacles.forEach(obstacle => {
-                    obstacle.element.remove();
+
+            createParticleEffect(emoji, color) {
+                // Simple particle effect (could be enhanced)
+                const particle = document.createElement('div');
+                particle.textContent = emoji;
+                particle.style.position = 'absolute';
+                particle.style.left = this.player.x + 'px';
+                particle.style.top = this.player.y + 'px';
+                particle.style.fontSize = '2rem';
+                particle.style.zIndex = '999';
+                particle.style.pointerEvents = 'none';
+                particle.style.animation = 'float 1s ease-out forwards';
+                
+                document.querySelector('.game-world').appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+
+            updateScore() {
+                this.score += 1;
+                
+                // Increase speed gradually
+                this.speed = 4 + Math.floor(this.score / 200) * 0.5;
+            }
+
+            updateUI() {
+                this.elements.currentScore.textContent = this.score;
+                this.elements.bestScore.textContent = this.bestScore;
+                
+                // Update lives display
+                let livesText = '';
+                for (let i = 0; i < this.lives; i++) {
+                    livesText += '❤️';
+                }
+                for (let i = this.lives; i < 3; i++) {
+                    livesText += '🖤';
+                }
+                this.elements.livesDisplay.textContent = livesText;
+            }
+
+            gameOver() {
+                this.gameState = 'gameOver';
+                
+                // Update best score
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('jumpGameBest', this.bestScore.toString());
+                    this.elements.newRecordMsg.classList.remove('hidden');
+                } else {
+                    this.elements.newRecordMsg.classList.add('hidden');
+                }
+
+                // Update game over screen
+                this.elements.finalScore.textContent = this.score;
+                this.elements.coinsCollected.textContent = this.coins;
+                this.elements.gameOverBestScore.textContent = this.bestScore;
+                
+                // Show game over menu
+                this.elements.gameOverMenu.classList.remove('hidden');
+            }
+
+            showBestScore() {
+                if (this.bestScore > 0) {
+                    this.elements.bestScoreMenu.classList.remove('hidden');
+                    this.elements.menuBestScore.textContent = this.bestScore;
+                }
+            }
+
+            clearGameObjects() {
+                // Remove all obstacles and coins
+                [...this.obstacles, ...this.coinsList].forEach(obj => {
+                    obj.element.remove();
                 });
                 this.obstacles = [];
+                this.coinsList = [];
             }
         }
-        
-        // Initialize game when page loads
+
+        // Start the game when page loads
         window.addEventListener('DOMContentLoaded', () => {
             new JumpGame();
         });
