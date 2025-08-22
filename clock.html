@@ -1,1 +1,76 @@
+div class=”main”>
+<div class=”badge”>
+CLOCK
+</div>
+<div class=”clock”>
+<span id=”hour”></span>
+<span id=”minute”></span>
+<span id=”second”></span>
+</div>
+</div>
 
+CSS code
+
+@import url(‘https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+*{
+margin:0;
+padding:0;
+box-sizing: border-box;
+}
+.main{
+background:#ccc;
+width:400px;
+height: 175px;
+margin: 100px auto;
+position:relative;
+padding:30px;
+}
+.badge{
+width:95px;
+background: #383CC1;
+color:white;
+padding: 5px 10px;
+font-family: sans-serif;
+font-weight: bold;
+position:absolute;
+top: -15px;
+left: 40%;
+}
+
+.clock{
+background-color: #ebebeb;
+text-align:center;
+font-size:55px;
+height: 100%;
+padding-top: 20px;
+font-family: ‘Orbitron’;
+border-radius: 4px;
+}
+
+JS Code
+
+function clock(){
+
+const fullDate= new Date();
+var hours= fullDate.getHours();
+var minutes= fullDate.getMinutes();
+var seconds=fullDate.getSeconds();
+
+if(hours<10){
+hours= “0”+hours;
+}
+if(minutes<10){
+minutes= “0”+minutes;
+}
+if(seconds<10){
+seconds= “0”+seconds;
+}
+document.getElementById(‘hour’).innerHTML=hours;
+document.getElementById(‘minute’).innerHTML= “:”+ minutes;
+document.getElementById(‘second’).innerHTML=”:”+seconds;
+
+}
+
+setInterval(clock, 100);
+
+Let me know if any question in comment sections.
